@@ -1,0 +1,350 @@
+一些博客
+lucene字典实现原理
+http://blog.jobbole.com/80669/
+lucene索引文件格式
+http://www.cnblogs.com/bonelee/p/6225742.html
+leetcode
+http://www.cnblogs.com/bonelee/tag/leetcode/
+lucene底层数据结构——FST，针对field使用列存储，delta encode压缩doc ids数组，LZ4压缩算法
+http://www.cnblogs.com/bonelee/p/6226386.html
+
+http://blog.mikemccandless.com/2013/06/build-your-own-finite-state-transducer.html
+Lucene索引在文件和内存中的数据结构
+http://blog.csdn.net/wuda0112/article/details/37774665
+浅谈MySQL和Lucene索引的对比分析
+http://www.jb51.net/article/93495.htm
+
+
+可以重点参考笨狐狸博客
+http://blog.csdn.net/liweisnake/article/category/1607677
+tf-idf公式
+http://blog.csdn.net/liweisnake/article/details/11229937
+
+重要参考：lucene源代码分析	
+http://blog.csdn.net/conansonic/article/details/52133356
+
+
+Lucene 4.X 倒排索引原理与实现: (2) 倒排表的格式设计
+http://www.cnblogs.com/forfuture1978/p/3944583.html
+==============
+StandardDirectoryReader$1	#607	
+
+
+
+ DirectoryReader.open
+	-->SegmentInfos.FindSegmentsFile(directory)//directory = D:\GitHub\java\lucene_test\index_test
+	
+	有个类叫SegmentReader
+	//读的代码在：
+	SegmentInfos.readCommit(
+	
+	
+	
+	读_5.si的代码在
+	SegmentInfo read(
+	
+	读 _0.cfs的代码在
+	D:\TestCodes\lucene-6.3.0\core\src\java\org\apache\lucene\codecs\lucene50\Lucene50CompoundReader.java
+	Lucene50CompoundReader
+	
+
+	
+	//1,先从LeafReaderContext获得TermsEnum
+	//term.field()是指字段名，如:bookname
+	//首次得到TermsEnum时，它的位置是未知的。你必须调用BytesRefIterator.next()
+	 final TermsEnum termsEnum = context.reader().terms(term.field()).iterator();
+	//2,查找词：term.bytes()是待查字段值，如“杀手"
+	//其实只是将termsEnum.term = term.field();
+	termsEnum.seekExact(term.bytes(), state);
+	//3.获得记录链表的迭代器。
+	//需要获得频率（frequencies）
+	 PostingsEnum docs = termsEnum.postings(null,  PostingsEnum.FREQS );   
+			--》调用Lucene50PostingsReader.postings
+	//获得所有的文档
+	  for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
+          if (acceptDocs == null || acceptDocs.get(doc)) {
+            collector.collect(doc);
+          }
+		  
+		  
+============
+an alternate codec. 
+	->PostingsFormat
+		->Lucene50PostingsFormat
+（Stored Field values.）storedFieldsFormat使用lz4压缩
+==================
+索引结构：
+Index Structure Overview
+
+索引结构概述
+每个段索引维护以下：
+Segment info  分部信息:   段的元数据，例如文件的数目，它使用什么文件.
+	-->.si
+Field names 字段名称:包含索引中使用的字段名称集.。
+	-->.fnm
+Stored Field values. 存储字段值: 属性值对的列表。属性是字段名。
+	-->.fdt 采用lz4压缩,存储Field数据.读取一定是随机的，可以定位的
+	-->.fdx 索引（目录）
+		是在FieldsWriter中生成的,原封不动地存储到文件中.
+Term dictionary.Term词典。包含该Term的文档的数目，和指向term's frequency and proximity data.的指针。
+(核心)
+	***Lucene50PostingsFormat
+	-->.tim: Term Dictionary
+		***BlockTreeTermsReader
+	-->.tip: Term Index
+	-->.doc: Frequencies and Skip Data  
+		***Lucene50PostingsReader
+	-->.pos: Positions
+		***Lucene50PostingsFormat
+	-->.pay: Payloads and Offsets
+Term Frequency data词频数据。Term出现在多少篇文档中，以及在每篇文旦中的频率
+	-->同上
+Term Proximity data Term距离数据。Term在每个文档中的位置.
+	-->同上
+Normalization factors归一化因子。 档中的每个字段都存储一个值，该值乘以该字段的命中分数。
+	-->.nvd: Norms data
+	-->.nvm: Norms metadata
+Term Vectors词向量。文档中的每个字段，由Term文本和Term频率组成.。若要向索引中添加Term向量，请参见字段构造函数.
+	文本文件用lz4压缩。二进制用packed ints.
+	****Lucene50TermVectorsFormat
+	比如高亮显示、模糊查询，那么需要设置Field.TermVector参比如高亮显示、模糊查询，那么需要设置Field.TermVector参,比如高亮显示、模糊查询，那么需要设置Field.TermVector参
+	-->.tvd 数据文件，包含词频，位置，偏移,有效负荷。terms和位置采用lz4压缩。payloads用 blocks of packed ints
+	-->.tvx索引文件，用来定位指定的文档数据。
+	-->.tvf	The field level info about term vectors
+Per-document values 序因子值。
+	-->.dvd: DocValues data
+	-->.dvm: DocValues metadata
+Live documents 活动文档
+	--> .liv
+----------------------------
+.fnm 
+	D:\TestCodes\lucene-6.3.0\core\src\java\org\apache\lucene\codecs\lucene60\Lucene60FieldInfosFormat.java
+	112行 read
+
+====================================
+Package org.apache.lucene.codecs Description:
+
+Postings lists - see PostingsFormat
+	-->Lucene50PostingsFormat(见Term dictionary)
+	-->PerFieldPostingsFormat
+DocValues - see DocValuesFormat
+	-->Lucene54DocValuesFormat（见Per-document values）
+Stored fields - see StoredFieldsFormat
+	-->CompressingStoredFieldsFormat
+	-->Lucene50StoredFieldsFormat（见Stored Field values）
+Term vectors - see TermVectorsFormat
+	-->CompressingTermVectorsFormat
+		-->Lucene50TermVectorsFormat(见Term Vectors词向量)
+Points - see PointsFormat
+	-->PointsFormat
+		-->Lucene60PointsFormat(a block KD-tree )
+FieldInfos - see FieldInfosFormat
+	-->Lucene60FieldInfosFormat(见Field names 字段名称)
+SegmentInfo - see SegmentInfoFormat
+	-->Lucene62SegmentInfoFormat(见Segment info  分部信息)
+Norms - see NormsFormat
+	-->Lucene53NormsFormat(见Normalization factors归一化因子)
+Live documents - see LiveDocsFormat
+	-->Lucene50LiveDocsFormat(见Live documents 活动文档)
+
+-==================
+ SegmentInfo Lucene62SegmentInfoFormat::read(
+
+	读完SegmentInfo后存到了infos里,也就是ChecksumIndexInput inpu
+===================
+寻找读倒排列表的地方：
+DirectoryReader ireader = DirectoryReader.open(directory
+  ->StandardDirectoryReader::doBody
+	->SegmentInfos sis = SegmentInfos.readCommit(directory, segmentFileName)
+	-> readers[i] = new SegmentReader(sis.info(i), IOContext.READ)
+	  ->core = new SegmentCoreReaders(si.info.dir, si, context);//读fnm
+	  
+读倒排拉链的应该是LeafReader类
+
+org.apache.lucene.index.IndexReader
+	org.apache.lucene.index.LeafReader
+		org.apache.lucene.index.CodecReader
+			org.apache.lucene.index.SegmentReader
+			
+一个SegmentReader就是一个LeafReader
+	SegmentReader::getFieldsReader() 
+		return core.fieldsReaderLocal.get()
+	**关注fieldsReaderLocal
+-------
+先看看terms怎么来的
+可以编写这样的代码。
+ final TermsEnum termsEnum = lc.reader().terms(term.field()).iterator()
+ 其中lc.reader()是LeafReader， 也就是SegmentReader
+ 
+ 在LeafReader::terms中，
+	return fields().terms(field);
+  因此，先看看fields是怎么来的？
+	-->在CodecReader中
+		 public final Fields fields() {
+			return getPostingsReader();
+		  }
+		  -->在SegmentReader中
+			  public FieldsProducer getPostingsReader() {
+				ensureOpen();
+				return core.fields;
+			  }
+			  -->在SegmentCoreReaders构造函数里：
+				fields = format.fieldsProducer(segmentReadState);
+ 先读.fnm,可以获得字段的名称
+ =================================
+tim写入的代码在
+BlockTreeTermsWriter::BlockTreeTermsWriter
+
+FieldReader
+BlockTree's implementation of Terms.
+-------
+
+BlockTreeTermsWriter::TermsWriter,写入tim文件。
+记录一下当前的文件指针。startFP
+
+
+第一个vInt是一个code. code最低位表示是不是last block
+numEntries = code >> 1
+
+先写在内存里
+suffixWriter:
+	长度(vInt)，字符串(bytes)
+statsWriter:
+	docFreq(vInt),totalTermFreq-docFreq(vLong)
+bytesWriter:
+	singletonDocID(vInt),lastPosBlockOffset?,skipOffset?
+	
+	
+
+metaWriter:
+		
+	longs[0] = state.docStartFP - lastState.docStartFP;
+	if (writePositions) {
+	  longs[1] = state.posStartFP - lastState.posStartFP;
+	  if (writePayloads || writeOffsets) {
+		longs[2] = state.payStartFP - lastState.payStartFP;
+	  }
+	}
+	
+把bytesWriter写到metaWriter后面.
+
+*写入suffixWriter: getFilePointer() <<1 |isLeafBlock,内容
+*写入statsWriter: getFilePointer() <<1 |isLeafBlock,内容
+*metaWriter: getFilePointer() <<1 |isLeafBlock,内容
+
+***********************
+prefix, startFP, hasTerms, isFloor, floorLeadLabel, subIndices
+
+
+
+---
+encodeOutput = (fp << 2) | (hasTerms ? BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS : 0) | (isFloor ? BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR : 0);
+  }
+-----
+tip文件的主要读取着：FieldReader
+	
+	输入参数：
+		numTerms  Term的个数
+		rootCode 该字段的FST根节点。
+		重要数据结构：indexStartFP，存放着该字段对应的FST在tip文件的偏移位置。
+	使用的是ReverseBytesReader，从后往前读
+	
+----
+FST 构造函数，将第一个buf存放在emptyOutput，
+			第二个buf存放在bytesArray
+---
+Terms terms = fields.terms(field);//从字段可以得到所有的term
+
+//从Term 可以得到term的内容
+TermsEnum termsEnum = terms.iterator();
+BytesRef term = termsEnum.next
+term = "zhoujunsheng"
+====
+abd-->1,2
+abe-->3,4
+acf-->5,6
+
+abc
+abdf
+abdg
+abdh
+
+==>indexBuilder.add
+   newBlocks.add(writeBlock(prefixLength, isFloor, nextFloorLeadLabel, nextBlockStart, 
+   end, hasTerms, hasSubBlocks));
+   newBlocks.add(writeBlock(prefixLength, isFloor, nextFloorLeadLabel, nextBlockStart, 
+   i,   hasTerms, hasSubBlocks));
+
+ ============================
+  每调用一个   writeBlock
+  都返回：
+  return new PendingBlock(prefix, startFP, hasTerms, isFloor, floorLeadLabel, subIndices);
+  
+  =============================
+BlockTreeTermsWriter::write
+  => TermsWriter::write{ 
+	=>Lucene50PostingsWriter::writeTerm
+	=> pushTerm {核心函数。
+				计算一定的条件，当满足一定条件时，就表示pending列表中待处理的一个或者多个Term，
+				需要保存为一个block，此时调用writeBlocks函数进行保存
+		=> writeBlocks {
+			=> writeBlock {
+					if (isLeafBlock) {
+						此时和tip无关
+						bytesWriter、suffixWriter、statsWriter、metaWriter会写入tim.
+					} else {
+						将pending列表中的Term或者Block写入.tim文件
+						接下来会通过PendingBlock::compileIndex写入tip
+					}
+			}	
+			=>PendingBlock::compileIndex {
+				 先写入：VLong  ==>  fp << 2) | (hasTerms ? BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS : 0) | (isFloor ? BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR : 0)
+				 if (isFloor) {
+					writeVInt(blocks.size())
+					 for (int i=1;i<blocks.size();i++) {
+					{
+						scratchBytes.writeByte((byte) sub.floorLeadByte)
+						scratchBytes.writeVLong((sub.fp - fp) << 1 | (sub.hasTerms ? 1 : 0))
+					}
+				} else {
+					compileIndex最核心的部分是通过Builder的add函数依次将Term或者Term的部分前缀添加到一颗树中，
+					由frontier数组维护，进而添加到FST中。
+					compileIndex最后通过Builder的finish函数将add添加后的FST树中的信息写入缓存中，
+					后续添加到.tip文件里。
+					
+					*看一下flag是怎么生成的？
+					  3 second FST==>0018C202731F0CC602701D03DE02611D
+					  1F怎么生成的？
+						18C2 02 73 1F
+						
+					    BIT_FINAL_ARC = 1 << 0;
+					    BIT_LAST_ARC = 1 << 1;最后一条弧
+					    BIT_TARGET_NEXT = 1 << 2;
+					    BIT_STOP_NODE = 1 << 3;
+						BIT_ARC_HAS_OUTPUT = 1 << 4; 有output
+					    BIT_ARC_HAS_FINAL_OUTPUT = 1 << 5;
+
+					  // Arcs are stored as fixed-size (per entry) array, so
+					  // that we can find an arc using binary search.  We do
+					  // this when number of arcs is > NUM_ARCS_ARRAY:
+
+					  // If set, the target node is delta coded vs current
+					  // position:
+					  private   BIT_TARGET_DELTA = 1 << 6;
+
+						   
+
+					==>indexBuilder.add(前缀，值）
+						==>frontier
+				}
+				=>Builder::Builder
+			}
+		}
+	   把term放入pending中
+	}
+	=>finish
+			indexOut==>tip文件
+			root.index ==>pending.index
+		****root.index.save(indexOut)FST写入.tip文件中
+		pending
+   }

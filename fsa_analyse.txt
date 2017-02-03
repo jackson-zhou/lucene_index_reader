@@ -1,0 +1,83 @@
+ static final int BIT_FINAL_ARC = 1 << 0;
+  static final int BIT_LAST_ARC = 1 << 1;
+  static final int BIT_TARGET_NEXT = 1 << 2;
+  static final int BIT_STOP_NODE = 1 << 3;
+  public static final int BIT_ARC_HAS_OUTPUT = 1 << 4;
+  static final int BIT_ARC_HAS_FINAL_OUTPUT = 1 << 5;
+  private static final int BIT_TARGET_DELTA = 1 << 6;
+
+下标都从0开始，从小到大。
+ab(61 62) => DE03
+00 
+62 => b
+0f => 1111 =>  BIT_FINAL_ARC + BIT_LAST_ARC + BIT_TARGET_NEXT + BIT_STOP_NODE
+03 
+de 
+02 
+61 => a
+16 ==>10110 => BIT_LAST_ARC +BIT_TARGET_NEXT　＋　BIT_ARC_HAS_OUTPUT
+=====================
+acc (61 63 63=>　C60C)
+
+00
+63 => c
+0F => 1111 =>  BIT_FINAL_ARC + BIT_LAST_ARC + BIT_TARGET_NEXT + BIT_STOP_NODE
+63 => c
+06 => 110 =>  BIT_LAST_ARC + BIT_TARGET_NEXT
+0c
+c6
+02
+61	=> a
+16 ==>10110 => BIT_LAST_ARC +BIT_TARGET_NEXT　＋　BIT_ARC_HAS_OUTPUT
+======================
+ac => 8e18
+00
+0c
+c6
+02
+63 => c
+1f => 11111 => BIT_FINAL_ARC + BIT_LAST_ARC + BIT_TARGET_NEXT + BIT_STOP_NODE + BIT_ARC_HAS_OUTPUT
+18
+8e
+02
+63 => c
+27 => 100111 => BIT_FINAL_ARC + BIT_LAST_ARC + BIT_TARGET_NEXT  +BIT_ARC_HAS_FINAL_OUTPUT
+61 => a 
+06 => 110 =>  BIT_LAST_ARC + BIT_TARGET_NEXT
+==============================
+ad (61 64)=> bf23016ffb05
+00
+64 => d
+0f => 1111 =>  BIT_FINAL_ARC + BIT_LAST_ARC + BIT_TARGET_NEXT + BIT_STOP_NODE
+05
+fb
+6f
+01
+23
+bf
+06
+61 => a 
+16==>10110 => BIT_LAST_ARC +BIT_TARGET_NEXT　＋　BIT_ARC_HAS_OUTPUT
+==============================
+ai(61 6c) => 8e 39
+00
+6c
+0f => 1111 =>  BIT_FINAL_ARC + BIT_LAST_ARC + BIT_TARGET_NEXT + BIT_STOP_NODE
+39
+83
+02
+61 => a
+16==>10110 => BIT_LAST_ARC +BIT_TARGET_NEXT　＋　BIT_ARC_HAS_OUTPUT
+
+==============================
+al(61 6e) => ae 45
+00
+6e
+0f => 1111 =>  BIT_FINAL_ARC + BIT_LAST_ARC + BIT_TARGET_NEXT + BIT_STOP_NODE
+45
+a3
+02
+61 => a
+16==>10110 => BIT_LAST_ARC +BIT_TARGET_NEXT　＋　BIT_ARC_HAS_OUTPUT
+
+ 格式： output + 长度 + 字符 + FLAG
