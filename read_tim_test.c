@@ -57,9 +57,30 @@ void read_tm_from_compound() {
 	fseek(indexIn,dataOffsetTip,SEEK_SET);
 	read_tip_with_fp(indexIn,numFields, dataOffsetTip, dataLengthTip);
 }
+
+void read_tm_from_file() {
+	char termsFile [NAME_MAX+1];
+	strcpy(termsFile, "index_test/_85_Lucene50_0.tim");
+	FILE* termsIn = fopen(termsFile,"rb");
+
+	char indexFile [NAME_MAX+1];
+	strcpy(indexFile, "index_test/_85_Lucene50_0.tip");
+	FILE* indexIn = fopen(indexFile,"rb");
+	int dataOffsetTim = 0;
+	int dataLengthTim = -1;		
+
+
+	int numFields = read_tim_with_fp(termsIn, indexIn,dataOffsetTim,dataLengthTim);
+	int dataOffsetTip = 0;
+	int dataLengthTip = -1;		
+
+
+	read_tip_with_fp(indexIn,numFields, dataOffsetTip, dataLengthTip);
+}
+
 int main()
 {
 	read_tm_from_compound();
-
+	//read_tm_from_file();
 	return 1;
 }

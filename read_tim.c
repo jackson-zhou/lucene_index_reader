@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "util.h"
 #include "CodecUtil.h"
 #include "read_tip.h"
 #include "read_tim.h"
@@ -71,7 +70,6 @@ int read_tim_with_fp(FILE* termsIn,FILE* indexIn,int f_start, int f_len) {
 			printf("%02X",rootCode[nIndex]);
 		}
 		printf("\n");
-		printf("rootCode:%s\n",rootCode);
 
 		uint64_t sumTotalTermFreq = readVLongP(termsIn,"sumTotalTermFreq");
 		uint64_t sumDocFreq = readVLongP(termsIn,"sumDocFreq");

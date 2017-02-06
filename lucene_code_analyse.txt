@@ -21,7 +21,7 @@ tf-idf公式
 http://blog.csdn.net/liweisnake/article/details/11229937
 
 重要参考：lucene源代码分析	
-http://blog.csdn.net/conansonic/article/details/52133356
+http://blog.csdn.net/conansonic/article/details/52091301
 
 
 Lucene 4.X 倒排索引原理与实现: (2) 倒排表的格式设计
@@ -166,7 +166,7 @@ org.apache.lucene.index.IndexReader
 		org.apache.lucene.index.CodecReader
 			org.apache.lucene.index.SegmentReader
 			
-一个SegmentReader就是一个LeafReader
+一个SegmentReader就是一个 LeafReader
 	SegmentReader::getFieldsReader() 
 		return core.fieldsReaderLocal.get()
 	**关注fieldsReaderLocal
@@ -348,3 +348,25 @@ BlockTreeTermsWriter::write
 		****root.index.save(indexOut)FST写入.tip文件中
 		pending
    }
+   ==================================
+   索引的读过程分析：
+   BlockTreeTermsReader::BlockTreeTermsReader
+     ->FieldReader::FieldReader
+	   -->FST::FST
+		--> cacheRootArcs
+			-->readFirstRealTargetArc()
+				{
+					记录一下arc.node = 1751 //当前位置
+					arc.numArcs = 24 //一共有24条弧线
+					arc.bytesPerArc = 21//固定长度，以便随机访问节点
+					arc.arcIdx = -1//当前在开头的位置（头结点）
+					arc.nextArc = 1748//下一个节点的位置。
+					arc.posArcsStart = 1748//第一个节点的位置
+				}
+				-->readNextRealArc//读取下一个节点
+				{
+					arc.arcIdx++;当前位置 +1
+					in.setPosition(arc.posArcsStart)
+					in.skipBytes(arc.arcIdx*arc.bytesPerArc);
+				}
+			

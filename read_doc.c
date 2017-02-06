@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "util.h"
 #include "CodecUtil.h"
 #include "read_tip.h"
 const char *indexPath = "index_test";

@@ -9,8 +9,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "util.h"
 #include "read_cfe.h"
+#include "CodecUtil.h"
 
 const char *indexPath = "index_test";
 
